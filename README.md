@@ -1,32 +1,33 @@
-# Чарли — сборка Android APK
+# Charlie Sensors — Android APK
 
-Этот вариант специально настроен для GitHub Actions и очищает старую Android-сборку перед каждым запуском.
+Проект полностью пересоздан как небольшое Kivy Android-приложение для проверки
+доступа к **камере** и **микрофону**. После запуска оно запрашивает Android
+runtime permissions, показывает изображение камеры и уровень входного звука.
 
-Главное изменение: Android Python runtime принудительно использует Python 3.12.10:
-`python3==3.12.10,hostpython3==3.12.10`.
+## Сборка APK в GitHub Actions
 
-На стороне GitHub Actions используется Python 3.12, Buildozer 1.6.0 и Cython 0.29.34.
+Новый workflow находится в
+[`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml).
 
-Это сделано потому, что python-for-android v2026.05.09 по документации стабилен для Python до 3.12, тогда как Python 3.14 использует более новый develop toolchain.
+1. Поместите изменения в ветку `main`.
+2. Откройте **Actions → Charlie Android APK (container)**.
+3. Нажмите **Run workflow** и выберите `main`.
+4. После успеха скачайте **Artifacts → Charlie-Sensors-APK**.
 
-## Сборка
+Не используйте **Re-run jobs** у старого workflow: GitHub повторяет тот же
+старый commit. Запускайте новый workflow с именем **Charlie Android APK
+(container)**.
 
-1. Загрузите файлы в корень репозитория.
-2. Проверьте, что workflow находится именно здесь:
-   `.github/workflows/build-apk.yml`
-3. Откройте **Actions**.
-4. Выберите **Build Charlie Android APK**.
-5. Нажмите **Run workflow**.
-6. После успешной сборки откройте **Artifacts → Charlie-APK**.
+## Android-права
 
-APK получает разрешения `CAMERA` и `RECORD_AUDIO`, поэтому камера и микрофон работают как часть отдельного Android-приложения, а не через Pydroid.
+APK объявляет `CAMERA` и `RECORD_AUDIO` в `buildozer.spec`. При запуске
+`main.py` запрашивает оба разрешения, а `Camera` и `AudioRecord` создаются
+только после ответа Android.
 
-## Что проверяется перед сборкой
+## Конфигурация
 
-- синтаксис `main.py`;
-- версия host Python 3.12;
-- Cython 0.29.34;
-- наличие workflow и `buildozer.spec`;
-- явная фиксация Android Python 3.12.10;
-- разрешения камеры и микрофона;
-- целостность полученного APK.
+- API target: 33;
+- minimum API: 24;
+- архитектура APK: `arm64-v8a`;
+- опубликованный готовый образ: `kivy/buildozer:latest` (без Docker `--user`);
+- Python recipes: `python3,kivy,pyjnius,android`.
