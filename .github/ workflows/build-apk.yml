@@ -1,0 +1,101 @@
+name: Build Charlie Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charlie-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Charlie Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk python3-pip python3-venv \
+            autoconf automake autopoint gettext libtool libltdl-dev \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 \
+            cmake libffi-dev libssl-dev rustc cargo
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install 'buildozer==1.6.0' 'cython==0.29.34'
+
+      - name: Preflight checks
+        run: |
+          set -eux
+          python --version
+          java -version
+          buildozer --version
+          python - <<'PY'
+          import sys, Cython
+          print('host_python =', sys.version)
+          print('cython =', Cython.__version__)
+          assert sys.version_info[:2] == (3, 12), sys.version
+          assert Cython.__version__ == '0.29.34', Cython.__version__
+          PY
+          python -m py_compile main.py
+          test -f buildozer.spec
+          test -f .github/workflows/build-apk.yml
+          grep -E '^(requirements|android.permissions|android.api|android.ndk|android.archs|p4a.branch|p4a.commit)' buildozer.spec
+          grep -q 'python3==3.12.10' buildozer.spec
+          grep -q 'hostpython3==3.12.10' buildozer.spec
+          grep -q 'android.permission.CAMERA' buildozer.spec
+          grep -q 'android.permission.RECORD_AUDIO' buildozer.spec
+
+      - name: Build debug APK
+        env:
+          PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: '0'
+        run: |
+          rm -rf .buildozer bin
+          buildozer -v android debug
+
+      - name: Verify APK
+        id: apk
+        shell: bash
+        run: |
+          APK=$(find bin -maxdepth 1 -type f -name '*.apk' -print -quit)
+          if [ -z "$APK" ]; then
+            echo 'ERROR: APK was not produced.'
+            find bin -maxdepth 2 -type f -print || true
+            exit 1
+          fi
+          echo "APK=$APK"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+          unzip -t "$APK" >/dev/null
+          echo 'APK ZIP integrity: OK'
+
+      - name: Upload Charlie APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: Charlie-APK
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
