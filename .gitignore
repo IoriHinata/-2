@@ -1,4 +1,6 @@
-__pycache__/
-*.py[cod]
-.buildozer/
-bin/
+.gradle/
+build/
+**/build/
+.local.properties
+.idea/
+*.iml
