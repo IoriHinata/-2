@@ -27,12 +27,19 @@ jobs:
           grep -Fx 'android.permissions = CAMERA,RECORD_AUDIO' buildozer.spec
           test ! -f .github/workflows/build-apk.yml
 
-      - name: Build debug APK
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          workdir: .
-          buildozer_version: stable
-          command: buildozer android debug
+      # Pull the published Kivy Buildozer image directly.  This avoids the
+      # obsolete third-party action Dockerfile, whose *Docker build* fails
+      # before Buildozer gets a chance to run.
+      - name: Build debug APK with published Kivy image
+        run: |
+          set -eux
+          docker pull kivy/buildozer:latest
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --volume "$GITHUB_WORKSPACE:/home/user/hostcwd" \
+            --workdir /home/user/hostcwd \
+            kivy/buildozer:latest \
+            android debug
 
       - name: Check generated APK
         id: apk

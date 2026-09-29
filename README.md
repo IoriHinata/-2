@@ -1,6 +1,6 @@
 # Charlie Sensors — Android APK
 
-Проект полностью пересоздан как небольшой Kivy Android-приложение для проверки
+Проект полностью пересоздан как небольшое Kivy Android-приложение для проверки
 доступа к **камере** и **микрофону**. После запуска оно запрашивает Android
 runtime permissions, показывает изображение камеры и уровень входного звука.
 
@@ -29,5 +29,5 @@ APK объявляет `CAMERA` и `RECORD_AUDIO` в `buildozer.spec`. При з
 - API target: 33;
 - minimum API: 24;
 - архитектура APK: `arm64-v8a`;
-- готовый контейнерный action: `ArtemSBulgakov/buildozer-action@v1`;
+- опубликованный готовый образ: `kivy/buildozer:latest`;
 - Python recipes: `python3,kivy,pyjnius,android`.
