@@ -1,0 +1,52 @@
+name: Charlie Android APK (container)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: charlie-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate project files
+        run: |
+          set -eux
+          python3 -m py_compile main.py
+          grep -Fx 'requirements = python3,kivy,pyjnius,android' buildozer.spec
+          grep -Fx 'android.permissions = CAMERA,RECORD_AUDIO' buildozer.spec
+          test ! -f .github/workflows/build-apk.yml
+
+      - name: Build debug APK
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: .
+          buildozer_version: stable
+          command: buildozer android debug
+
+      - name: Check generated APK
+        id: apk
+        shell: bash
+        run: |
+          set -eux
+          apk=$(find bin -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          unzip -t "$apk" >/dev/null
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Charlie-Sensors-APK
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
