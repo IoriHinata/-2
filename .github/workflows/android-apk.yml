@@ -34,8 +34,10 @@ jobs:
         run: |
           set -eux
           docker pull kivy/buildozer:latest
+          # The image entrypoint creates and switches to its build user. Do not
+          # pass --user here: it prevents that setup and causes `groupadd:
+          # Permission denied` before Buildozer starts.
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
             --volume "$GITHUB_WORKSPACE:/home/user/hostcwd" \
             --workdir /home/user/hostcwd \
             kivy/buildozer:latest \

@@ -29,5 +29,5 @@ APK объявляет `CAMERA` и `RECORD_AUDIO` в `buildozer.spec`. При з
 - API target: 33;
 - minimum API: 24;
 - архитектура APK: `arm64-v8a`;
-- опубликованный готовый образ: `kivy/buildozer:latest`;
+- опубликованный готовый образ: `kivy/buildozer:latest` (без Docker `--user`);
 - Python recipes: `python3,kivy,pyjnius,android`.
