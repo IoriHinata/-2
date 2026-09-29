@@ -1,33 +1,51 @@
-# Charlie Sensors — Android APK
+# Charlie Sensors — простой Android APK
 
-Проект полностью пересоздан как небольшое Kivy Android-приложение для проверки
-доступа к **камере** и **микрофону**. После запуска оно запрашивает Android
-runtime permissions, показывает изображение камеры и уровень входного звука.
+Проект переписан на минимальный **нативный Android / Java / Gradle** шаблон.
+APK собирается без Python, Kivy, Buildozer, NDK и сторонних Android-библиотек.
+Исходный код экспериментальной нейросети сохранён в `main.py` и не включается
+в Android Gradle-модуль, поэтому он не может сломать сборку APK.
 
-## Сборка APK в GitHub Actions
+## Сборка
 
-Новый workflow находится в
-[`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml).
+Нужны JDK 17, Gradle 8.9 и доступ к репозиториям Google Maven и Maven Central.
 
-1. Поместите изменения в ветку `main`.
-2. Откройте **Actions → Charlie Android APK (container)**.
-3. Нажмите **Run workflow** и выберите `main`.
-4. После успеха скачайте **Artifacts → Charlie-Sensors-APK**.
+```bash
+gradle assembleDebug
+```
 
-Не используйте **Re-run jobs** у старого workflow: GitHub повторяет тот же
-старый commit. Запускайте новый workflow с именем **Charlie Android APK
-(container)**.
+Готовый файл:
 
-## Android-права
+```text
+app/build/outputs/apk/debug/app-debug.apk
+```
 
-APK объявляет `CAMERA` и `RECORD_AUDIO` в `buildozer.spec`. При запуске
-`main.py` запрашивает оба разрешения, а `Camera` и `AudioRecord` создаются
-только после ответа Android.
+Для проверки без установки на устройство:
 
-## Конфигурация
+```bash
+gradle --no-daemon assembleDebug
+unzip -t app/build/outputs/apk/debug/app-debug.apk
+```
 
-- API target: 33;
-- minimum API: 24;
-- архитектура APK: `arm64-v8a`;
-- опубликованный готовый образ: `kivy/buildozer:latest` (без Docker `--user`);
-- Python recipes: `python3,kivy,pyjnius,android`.
+## CI
+
+Workflow [`.github/workflows/android-apk.yml`](.github/workflows/android-apk.yml)
+запускается для pull request, push в `main` и вручную из **Actions**. Он
+использует Temurin JDK 17, устанавливает Android API 35, выполняет
+`assembleDebug`, проверяет ZIP-структуру APK и публикует артефакт
+`Charlie-Sensors-debug-apk`.
+
+## Исходный код нейросети
+
+`main.py` восстановлен из исходного коммита проекта. Это оригинальная Python/Kivy
+реализация CHARLIE: память, разреженная SNN на 120 000 нейронов, обработка
+микрофона и камеры, обучение аудио-визуальных ассоциаций. Она сохранена как
+исходник нейросети и не удаляется Gradle-сборкой. Нативный APK-модуль пока
+является надёжным минимальным шаблоном сборки и не запускает этот Python-код.
+
+## Структура
+
+- `main.py` — восстановленный исходный код нейросети CHARLIE;
+- `app/src/main/java/org/charlie/sensors/MainActivity.java` — экран приложения;
+- `app/src/main/AndroidManifest.xml` — Android manifest;
+- `app/build.gradle` — Android application module;
+- Gradle 8.9 устанавливается в CI через `gradle/actions/setup-gradle`; бинарный Gradle Wrapper в репозиторий не добавляется.
